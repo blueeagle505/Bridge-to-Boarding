@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +19,7 @@ const schema = z.object({
 });
 type FormInput = z.infer<typeof schema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token") || "";
@@ -48,26 +48,34 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6 pt-24">
-      <div className="w-full max-w-md rounded-2xl border border-foreground/8 bg-white p-8 shadow-sm">
-        <h1 className="font-display text-2xl font-medium">Choose a new password</h1>
+    <div className="w-full max-w-md rounded-2xl border border-foreground/8 bg-white p-8 shadow-sm">
+      <h1 className="font-display text-2xl font-medium">Choose a new password</h1>
 
-        {success ? (
-          <div className="mt-8 rounded-xl bg-secondary/60 p-6 text-sm">Password updated. Redirecting you to sign in...</div>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
-            <div>
-              <Label htmlFor="password">New Password</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
-            </div>
-            {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Updating..." : "Update Password"}
-            </Button>
-          </form>
-        )}
-      </div>
+      {success ? (
+        <div className="mt-8 rounded-xl bg-secondary/60 p-6 text-sm">Password updated. Redirecting you to sign in...</div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+          <div>
+            <Label htmlFor="password">New Password</Label>
+            <Input id="password" type="password" {...register("password")} />
+            {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
+          </div>
+          {serverError && <p className="text-sm text-destructive">{serverError}</p>}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Updating..." : "Update Password"}
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center px-6 pt-24">
+      <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+        <ResetPasswordForm />
+      </Suspense>
     </div>
   );
 }

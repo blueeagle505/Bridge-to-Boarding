@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function SignInPage() {
+function SignInForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [serverError, setServerError] = useState("");
@@ -38,38 +38,46 @@ export default function SignInPage() {
   }
 
   return (
+    <div className="w-full max-w-md rounded-2xl border border-foreground/8 bg-white p-8 shadow-sm">
+      <h1 className="font-display text-2xl font-medium">Welcome back</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Sign in to your Bridge to Boarding account.</p>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" {...register("email")} />
+          {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
+        </div>
+        <div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link href="/forgot-password" className="text-xs font-medium text-foreground/60 hover:text-foreground">
+              Forgot password?
+            </Link>
+          </div>
+          <Input id="password" type="password" {...register("password")} />
+          {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
+        </div>
+        {serverError && <p className="text-sm text-destructive">{serverError}</p>}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Signing in..." : "Sign In"}
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Don't have an account?{" "}
+        <Link href="/signup" className="font-medium text-foreground hover:underline">Sign up</Link>
+      </p>
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
     <div className="flex min-h-screen items-center justify-center px-6 pt-24">
-      <div className="w-full max-w-md rounded-2xl border border-foreground/8 bg-white p-8 shadow-sm">
-        <h1 className="font-display text-2xl font-medium">Welcome back</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Sign in to your Bridge to Boarding account.</p>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register("email")} />
-            {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
-          </div>
-          <div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link href="/forgot-password" className="text-xs font-medium text-foreground/60 hover:text-foreground">
-                Forgot password?
-              </Link>
-            </div>
-            <Input id="password" type="password" {...register("password")} />
-            {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
-          </div>
-          {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign In"}
-          </Button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link href="/signup" className="font-medium text-foreground hover:underline">Sign up</Link>
-        </p>
-      </div>
+      <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+        <SignInForm />
+      </Suspense>
     </div>
   );
 }
