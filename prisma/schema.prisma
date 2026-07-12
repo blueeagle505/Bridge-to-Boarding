@@ -1,0 +1,191 @@
+// Bridge to Boarding — Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  APPLICANT
+  MENTOR
+  ADMIN
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  MENTOR_ASSIGNED
+  WAITLISTED
+  REJECTED
+  CLOSED
+}
+
+enum MentorApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CurrentGrade {
+  GRADE_7
+  GRADE_8
+}
+
+model User {
+  id                String    @id @default(cuid())
+  firstName         String
+  lastName          String
+  email             String    @unique
+  passwordHash      String
+  role              Role      @default(APPLICANT)
+  emailVerified     DateTime?
+  image             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Applicant relations
+  application       Application?
+
+  // Mentor relations
+  mentorProfile     MentorProfile?
+
+  verificationTokens VerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  sentMessages       Message[] @relation("MessageSender")
+  notes               AdminNote[] @relation("NoteAuthor")
+  auditLogs           AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Application {
+  id             String            @id @default(cuid())
+  userId         String            @unique
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName      String
+  lastName       String
+  email          String
+  currentSchool  String
+  state          String
+  currentGrade   CurrentGrade
+  gpa            String
+  helpNeeded     String            @db.Text
+  agreedToTerms  Boolean           @default(false)
+
+  status         ApplicationStatus @default(DRAFT)
+
+  mentorId       String?
+  mentor         MentorProfile?    @relation(fields: [mentorId], references: [id])
+
+  notes          AdminNote[]
+  messages       Message[]
+
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([status])
+  @@index([mentorId])
+  @@index([state])
+}
+
+model MentorProfile {
+  id                String                   @id @default(cuid())
+  userId            String                   @unique
+  user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  school            String
+  graduationYear    Int
+  currentGrade      String
+  activities        String                   @db.Text
+  leadership        String                   @db.Text
+  expertise         String[]
+  availability      String
+  motivation        String                   @db.Text
+
+  status            MentorApplicationStatus  @default(PENDING)
+  maxCapacity       Int                      @default(3)
+
+  mentees           Application[]
+
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@index([status])
+}
+
+model Message {
+  id            String       @id @default(cuid())
+  applicationId String
+  application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        User         @relation("MessageSender", fields: [senderId], references: [id])
+  body          String       @db.Text
+  createdAt     DateTime     @default(now())
+
+  @@index([applicationId])
+}
+
+model AdminNote {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User        @relation("NoteAuthor", fields: [authorId], references: [id])
+  body          String      @db.Text
+  createdAt     DateTime    @default(now())
+
+  @@index([applicationId])
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  fileUrl     String
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  targetId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+}
