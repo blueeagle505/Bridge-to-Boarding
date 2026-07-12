@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -31,10 +31,16 @@ export default function BecomeAMentorPage() {
     formState: { errors, isSubmitting },
   } = useForm<MentorApplicationInput>({ resolver: zodResolver(mentorApplicationSchema) });
 
+  // Keep the checkbox's plain React state in sync with react-hook-form's
+  // internal form value, so the zod resolver actually sees it at submit time.
+  useEffect(() => {
+    setValue("agreedToTerms", agree as true, { shouldValidate: false });
+  }, [agree, setValue]);
+
   function toggleExpertise(item: string) {
     const next = expertise.includes(item) ? expertise.filter((e) => e !== item) : [...expertise, item];
     setExpertise(next);
-    setValue("expertise", next);
+    setValue("expertise", next, { shouldValidate: false });
   }
 
   async function onSubmit(data: MentorApplicationInput) {
@@ -42,9 +48,9 @@ export default function BecomeAMentorPage() {
     const res = await fetch("/api/mentor-applications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, agreedToTerms: agree }),
+      body: JSON.stringify(data),
     });
-    const result = await res.json();
+    const result = await res.json().catch(() => ({}));
     if (!res.ok) {
       setServerError(result.error || "Something went wrong.");
       return;
@@ -162,10 +168,11 @@ export default function BecomeAMentorPage() {
               I confirm the information above is accurate and understand my application will be reviewed by the Bridge to Boarding admin team.
             </Label>
           </div>
+          {errors.agreedToTerms && <p className="text-xs text-destructive">You must agree to the terms to submit your application.</p>}
 
           {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 
-          <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || !agree}>
+          <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
             {isSubmitting ? "Submitting..." : "Submit Mentor Application"}
           </Button>
         </form>
