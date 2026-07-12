@@ -39,7 +39,12 @@ export async function PATCH(req: NextRequest) {
     });
 
     if (parsed.data.action === "APPROVE") {
-      await db.user.update({ where: { id: mentor.userId }, data: { role: "MENTOR" } });
+      // Only promote to MENTOR if they aren't already an ADMIN — approving
+      // your own mentor application as an admin should let you act as a
+      // mentor without losing admin access.
+      if (mentor.user.role !== "ADMIN") {
+        await db.user.update({ where: { id: mentor.userId }, data: { role: "MENTOR" } });
+      }
       await mailer.mentorWelcome(mentor.user.email, mentor.user.firstName);
     }
 
