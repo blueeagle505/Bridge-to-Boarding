@@ -1,12 +1,16 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { signInSchema } from "@/lib/validations";
 
+// Note: no database adapter is configured here on purpose. This app uses
+// JWT sessions and a single Credentials provider, and manages email
+// verification / password reset tokens itself via the VerificationToken
+// and PasswordResetToken Prisma models — so no adapter-managed accounts
+// or sessions table is needed. (An adapter is only required for database
+// sessions or OAuth providers that need Account/Session records.)
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: {
     signIn: "/signin",
