@@ -50,12 +50,12 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as { role: string }).role;
+        token.role = user.role as "APPLICANT" | "MENTOR" | "ADMIN";
       }
       // Keep role fresh in case an admin changes it mid-session.
       if (!user && token.id) {
         const dbUser = await db.user.findUnique({ where: { id: token.id as string } });
-        if (dbUser) token.role = dbUser.role;
+        if (dbUser) token.role = dbUser.role as "APPLICANT" | "MENTOR" | "ADMIN";
       }
       return token;
     },
