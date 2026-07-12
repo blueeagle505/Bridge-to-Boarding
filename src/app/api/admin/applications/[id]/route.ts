@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { adminApplicationActionSchema } from "@/lib/validations";
 import { requireRole } from "@/lib/rbac";
 import { mailer } from "@/lib/email";
+import type { Prisma } from "@prisma/client";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -113,6 +114,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-async function logAudit(userId: string, action: string, targetId: string, metadata?: Record<string, unknown>) {
+async function logAudit(userId: string, action: string, targetId: string, metadata?: Prisma.InputJsonValue) {
   await db.auditLog.create({ data: { userId, action, targetId, metadata } });
 }
